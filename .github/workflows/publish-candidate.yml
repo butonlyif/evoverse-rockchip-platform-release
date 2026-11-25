@@ -1,0 +1,69 @@
+name: Publish verified Platform candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing draft release tag
+        required: true
+        default: platform-development-2026.11.24-candidate.1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: platform-candidate-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITEE_OWNER: but-only-if
+      GITEE_REPO: evoverse-rockchip-platform-release
+      GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+      PLATFORM_RELEASE_SIGN_KEY: ${{ secrets.PLATFORM_RELEASE_SIGN_KEY }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install signing dependency
+        run: python -m pip install cryptography==49.0.0
+      - name: Download draft and verify all promised bytes
+        run: |
+          mkdir assets
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -D assets
+          python -m scripts.verify_assets assets/platform-development-release-input.json assets
+      - name: Sign descriptor and check public key
+        run: |
+          python -m scripts.sign_descriptor sign assets/platform-development-release-input.json \
+            --output assets/platform-development-release.json
+          python -m scripts.sign_descriptor verify assets/platform-development-release.json
+      - name: Prepare Gitee shards and verify local closure
+        run: |
+          python -m scripts.shard_assets assets/platform-development-release.json assets shards "$TAG"
+          python scripts/publish_gitee_shards.py \
+            --shards-manifest shards/publish-manifest.json --assets-dir shards --tag "$TAG" \
+            --target-commitish master
+      - name: Add signed metadata to GitHub draft
+        run: |
+          gh release upload "$TAG" assets/platform-development-release.json shards/reassembly.json \
+            -R "$GITHUB_REPOSITORY"
+      - name: Publish and redownload Gitee shards
+        run: |
+          python scripts/publish_gitee_shards.py \
+            --shards-manifest shards/publish-manifest.json --assets-dir shards --tag "$TAG" \
+            --target-commitish master --evidence gitee-publish-evidence.json --yes
+      - name: Publish GitHub candidate after both channels verify
+        run: gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --draft=false --prerelease=true
+      - name: Record channel evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-candidate-publish-evidence
+          path: gitee-publish-evidence.json
+          if-no-files-found: ignore
