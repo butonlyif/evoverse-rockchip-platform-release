@@ -1,0 +1,38 @@
+name: Mirror release metadata to Gitee
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Mirror commit to Gitee
+        shell: bash
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$GITEE_TOKEN"
+          cat > "$RUNNER_TEMP/gitee-askpass" <<'EOF'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' 'but-only-if' ;;
+            *Password*) printf '%s\n' "$GITEE_TOKEN" ;;
+            *) exit 1 ;;
+          esac
+          EOF
+          chmod 700 "$RUNNER_TEMP/gitee-askpass"
+          GIT_ASKPASS="$RUNNER_TEMP/gitee-askpass" GIT_TERMINAL_PROMPT=0 \
+            git -c credential.helper= push \
+              https://gitee.com/but-only-if/evoverse-rockchip-platform-release.git \
+              HEAD:refs/heads/master
