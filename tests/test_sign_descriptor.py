@@ -14,6 +14,7 @@ from scripts.sign_descriptor import sign, verify
 from scripts.verify_assets import verify as verify_assets
 from scripts import shard_assets
 from scripts import reassemble
+from scripts import index_manifest
 
 
 def candidate():
@@ -93,6 +94,11 @@ def test_gitee_shards_reassemble_to_signed_assets(tmp_path, monkeypatch):
     envelope = tmp_path / "signed.json"
     sign(raw, envelope, public_path)
     assert verify_assets(envelope, tmp_path, public_path) == 4
+    index_path = tmp_path / "index-manifest.json"
+    index_manifest.write_manifest(envelope, "candidate.1", index_path, public_path)
+    index = json.loads(index_path.read_text())
+    assert index["kind"] == "evoverse-platform-index"
+    assert index["bundles"][0]["assets"][0]["sha256"] == hashlib.sha256(envelope.read_bytes()).hexdigest()
     monkeypatch.setattr(shard_assets, "CHUNK_SIZE", 7)
     output = tmp_path / "shards"
     count, parts = shard_assets.shard(envelope, tmp_path, output, "candidate.1", public_path)

@@ -1,0 +1,46 @@
+name: Publish Gitee signed candidate index
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Candidate tag
+        required: true
+        default: platform-development-2026.11.24-candidate.1
+
+jobs:
+  publish-index:
+    runs-on: ubuntu-latest
+    env:
+      GITEE_OWNER: but-only-if
+      GITEE_REPO: evoverse-rockchip-platform-release
+      GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install cryptography==49.0.0
+      - name: Verify signed index and local upload closure
+        run: |
+          python -m scripts.index_manifest \
+            releases/candidates/2026.11.24/platform-development-release.json \
+            "$TAG" index-manifest.json
+          python scripts/publish_gitee_shards.py \
+            --shards-manifest index-manifest.json \
+            --assets-dir releases/candidates/2026.11.24 \
+            --tag "$TAG" --target-commitish master
+      - name: Publish and redownload Gitee index
+        run: |
+          python scripts/publish_gitee_shards.py \
+            --shards-manifest index-manifest.json \
+            --assets-dir releases/candidates/2026.11.24 \
+            --tag "$TAG" --target-commitish master \
+            --evidence gitee-index-evidence.json --yes
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitee-index-evidence
+          path: gitee-index-evidence.json
+          if-no-files-found: ignore

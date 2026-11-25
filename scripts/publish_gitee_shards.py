@@ -116,8 +116,8 @@ def load_manifest(path):
         m = json.load(open(path, encoding="utf-8"))
     except (OSError, ValueError) as e:
         die("cannot read shards manifest %s: %s" % (path, e), 1)
-    if m.get("kind") != "evoverse-platform-mirror-shards":
-        die("manifest kind must be evoverse-platform-mirror-shards", 1)
+    if m.get("kind") not in ("evoverse-platform-mirror-shards", "evoverse-platform-index"):
+        die("manifest kind is not supported", 1)
     if not isinstance(m.get("bundles"), list) or not m["bundles"]:
         die("manifest bundles[] missing/empty", 1)
     for b in m["bundles"]:
@@ -300,9 +300,17 @@ def main():
                                0, 0, 0, [], ["cannot resolve default_branch; pass --target-commitish"],
                                rollback)
                 die("cannot resolve default_branch (HTTP %s); pass --target-commitish" % st2, 1)
+        index_only = manifest["kind"] == "evoverse-platform-index"
+        body = ("EvoVerse Platform Development signed index (UNQUALIFIED_NO_BOOT). "
+                "Gitee hosts the descriptor and instructions only; complete binary assets are at "
+                "https://github.com/butonlyif/evoverse-rockchip-platform-release/releases/tag/" + tag + ". "
+                "No board boot or NPU execution was tested.\n\n"
+                "签名索引与说明在 Gitee；完整二进制资产请从上述 GitHub Release 下载并校验。"
+                "本候选无板卡启动与 NPU 实测。") if index_only else (
+                "EvoVerse Platform Development candidate mirror (UNQUALIFIED_NO_BOOT). "
+                "Reassemble shards and verify the signed descriptor; no board boot or NPU execution was tested.")
         data = json.dumps({"tag_name": tag, "name": tag,
-                           "body": "EvoVerse Platform Development candidate mirror (UNQUALIFIED_NO_BOOT). "
-                                   "Reassemble shards and verify the signed descriptor; no board boot or NPU execution was tested.",
+                           "body": body,
                            "prerelease": True, "target_commitish": tc}).encode()
         st, _, body = api.request("POST", "%s/repos/%s/%s/releases" % (api.base, owner, repo),
                                   headers={"Content-Type": "application/json"}, data=data)
