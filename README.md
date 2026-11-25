@@ -7,3 +7,5 @@ No release is available yet. A release is usable only when its signed descriptor
 The first candidate may carry `UNQUALIFIED_NO_BOOT`: software qualification passed, while board flash, boot, target execution and NPU execution remain `NOT_RUN / NO_BOARD`. This state does not qualify the image for production deployment. A later hardware-qualified promotion requires separate boot and hardware evidence.
 
 Release assets are immutable. The descriptor's SHA-256 digest and target board identity are the authority; the tag or URL alone is not.
+
+The release-signing public key is in `trust/platform-release-2026-11.pub` (raw Ed25519 public key, hex). Its private counterpart is held only as the `PLATFORM_RELEASE_SIGN_KEY` Actions secret in this repository. This key has not signed a public release yet.
