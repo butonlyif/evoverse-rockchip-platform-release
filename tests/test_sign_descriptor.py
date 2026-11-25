@@ -13,6 +13,7 @@ from cryptography.hazmat.primitives import serialization
 from scripts.sign_descriptor import sign, verify
 from scripts.verify_assets import verify as verify_assets
 from scripts import shard_assets
+from scripts import reassemble
 
 
 def candidate():
@@ -101,6 +102,9 @@ def test_gitee_shards_reassemble_to_signed_assets(tmp_path, monkeypatch):
         rebuilt = b"".join((output / part["name"]).read_bytes() for part in item["parts"])
         assert len(rebuilt) == item["bytes"]
         assert hashlib.sha256(rebuilt).hexdigest() == item["sha256"]
+    restored = tmp_path / "restored"
+    assert reassemble.reassemble(output / "reassembly.json", output, restored, public_path) == 5
+    assert verify_assets(restored / "platform-development-release.json", restored, public_path) == 4
     publish = json.loads((output / "publish-manifest.json").read_text())
     assert publish["kind"] == "evoverse-platform-mirror-shards"
     assert publish["bundles"][-1]["file"] == "reassembly.json"
@@ -111,3 +115,7 @@ def test_gitee_shards_reassemble_to_signed_assets(tmp_path, monkeypatch):
     ], env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert "dry-run closure PASS" in result.stdout
+    first_part = manifest["files"][0]["parts"][0]["name"]
+    (output / first_part).write_bytes(b"tampered")
+    with pytest.raises(ValueError, match="part"):
+        reassemble.reassemble(output / "reassembly.json", output, tmp_path / "rejected", public_path)
