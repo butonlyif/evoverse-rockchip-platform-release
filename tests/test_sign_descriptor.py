@@ -91,6 +91,7 @@ def test_gitee_shards_reassemble_to_signed_assets(tmp_path, monkeypatch):
     raw.write_text(json.dumps(descriptor))
     envelope = tmp_path / "signed.json"
     sign(raw, envelope, public_path)
+    assert verify_assets(envelope, tmp_path, public_path) == 4
     monkeypatch.setattr(shard_assets, "CHUNK_SIZE", 7)
     output = tmp_path / "shards"
     count, parts = shard_assets.shard(envelope, tmp_path, output, "candidate.1", public_path)

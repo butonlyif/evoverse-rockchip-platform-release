@@ -7,11 +7,16 @@ import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from scripts.sign_descriptor import check_descriptor
+from scripts.sign_descriptor import check_descriptor, verify as verify_signature
 
 
-def verify(descriptor_path, assets_dir):
-    descriptor = json.loads(Path(descriptor_path).read_text(encoding="utf-8"))
+def verify(descriptor_path, assets_dir, public_key=Path("trust/platform-release-2026-11.pub")):
+    document = json.loads(Path(descriptor_path).read_text(encoding="utf-8"))
+    if "signature" in document:
+        verify_signature(Path(descriptor_path), Path(public_key))
+        descriptor = document["descriptor"]
+    else:
+        descriptor = document
     check_descriptor(descriptor)
     for asset in descriptor["assets"]:
         name = Path(urlsplit(asset["url"]).path).name
@@ -29,8 +34,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("descriptor", type=Path)
     parser.add_argument("assets_dir", type=Path)
+    parser.add_argument("--public-key", type=Path, default=Path("trust/platform-release-2026-11.pub"))
     args = parser.parse_args()
-    print(f"PASS {verify(args.descriptor, args.assets_dir)} assets")
+    print(f"PASS {verify(args.descriptor, args.assets_dir, args.public_key)} assets")
 
 
 if __name__ == "__main__":

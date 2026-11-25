@@ -51,8 +51,18 @@ jobs:
             --target-commitish master
       - name: Add signed metadata to GitHub draft
         run: |
-          gh release upload "$TAG" assets/platform-development-release.json shards/reassembly.json \
-            -R "$GITHUB_REPOSITORY"
+          for file in assets/platform-development-release.json shards/reassembly.json; do
+            name="$(basename "$file")"
+            expected="sha256:$(sha256sum "$file" | cut -d' ' -f1)"
+            actual="$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets \
+              --jq ".assets[] | select(.name == \"$name\") | .digest")"
+            if [ -z "$actual" ]; then
+              gh release upload "$TAG" "$file" -R "$GITHUB_REPOSITORY"
+            elif [ "$actual" != "$expected" ]; then
+              echo "Existing $name has different digest" >&2
+              exit 1
+            fi
+          done
       - name: Publish and redownload Gitee shards
         run: |
           python scripts/publish_gitee_shards.py \
