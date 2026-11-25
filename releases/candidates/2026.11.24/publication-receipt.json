@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "tag": "platform-development-2026.11.24-candidate.1",
+  "qualification": "UNQUALIFIED_NO_BOOT",
+  "github": {
+    "url": "https://github.com/butonlyif/evoverse-rockchip-platform-release/releases/tag/platform-development-2026.11.24-candidate.1",
+    "state": "public-prerelease",
+    "signedDescriptorSha256": "2385cdbb84ccb2894ae8c89ba7a7cbb09d8c087039c6f2047407e6ce81c652af",
+    "anonymousReadback": {
+      "app-builder": "ff01a43889e8afa6da6bbdf09dd654ca279b4d9abc9c6c8330453b57a97d756c",
+      "firmware": "f3d2f9da117cc39ee22b164eec010faa51dafe27b4fe41be0a2d19e63f45d97b",
+      "model-builder": "e2acd601fbce53e2552a55d1b408115aed55a514b23c4204a4ef18f09e99f87b",
+      "sysroot": "26d950688d6cc1657ae73323e16e74e7afc3fe2e3cd581dc21a0115e4b36a6f5",
+      "source-compliance": "7ce23a674903a68e5b532bc3f4eee77266b91d5b55d7bcc38640cb79fd76b3ea"
+    }
+  },
+  "gitee": {
+    "url": "https://gitee.com/but-only-if/evoverse-rockchip-platform-release/releases/tag/platform-development-2026.11.24-candidate.1",
+    "state": "public-signed-index-only",
+    "signedDescriptorSha256": "2385cdbb84ccb2894ae8c89ba7a7cbb09d8c087039c6f2047407e6ce81c652af",
+    "publisherRun": "45675689026",
+    "binaryMirror": false,
+    "reason": "ordinary Gitee repository attachment quota is 1 GB"
+  },
+  "sdkWorkbenchPackage": "NOT_RELEASED_WITH_SIGNED_DESCRIPTOR_VERIFICATION",
+  "hardware": "NOT_RUN_NO_BOARD",
+  "compliance": "component and corresponding-source evidence collected; no legal clearance determination"
+}
