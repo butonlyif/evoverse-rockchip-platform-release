@@ -321,9 +321,14 @@ def main():
         st, _, body = api.request("POST", "%s/repos/%s/%s/releases" % (api.base, owner, repo),
                                   headers={"Content-Type": "application/json"}, data=data)
         if not (200 <= st < 300):
+            try:
+                message = json.loads(body.decode("utf-8", "replace")).get("message", "")
+            except (ValueError, AttributeError):
+                message = ""
+            message = str(message).replace(token, "[REDACTED]")[:160]
             write_evidence(opts, owner, repo, tag, token, api_base, "PASS", False,
-                           0, 0, 0, [], ["release creation failed with HTTP %s" % st], rollback)
-            die("release creation failed with HTTP %s" % st, 1)
+                           0, 0, 0, [], ["release creation failed with HTTP %s: %s" % (st, message)], rollback)
+            die("release creation failed with HTTP %s: %s" % (st, message), 1)
         created_here = True
         release = json.loads(body.decode("utf-8", "replace"))
     elif 200 <= st < 300:
