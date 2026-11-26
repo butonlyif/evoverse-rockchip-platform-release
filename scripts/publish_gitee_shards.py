@@ -116,12 +116,10 @@ def load_manifest(path):
         m = json.load(open(path, encoding="utf-8"))
     except (OSError, ValueError) as e:
         die("cannot read shards manifest %s: %s" % (path, e), 1)
-    if m.get("kind") not in ("evoverse-platform-mirror-shards", "evoverse-platform-index", "evoverse-public-release-assets"):
+    if m.get("kind") not in ("evoverse-platform-mirror-shards", "evoverse-platform-index"):
         die("manifest kind is not supported", 1)
     if not isinstance(m.get("bundles"), list) or not m["bundles"]:
         die("manifest bundles[] missing/empty", 1)
-    if m["kind"] == "evoverse-public-release-assets" and not m.get("releaseBody"):
-        die("public release manifest requires releaseBody", 1)
     for b in m["bundles"]:
         for k in ("file", "bytes", "sha256", "assets"):
             if k not in b:
@@ -311,12 +309,10 @@ def main():
                 "本候选无板卡启动与 NPU 实测。") if index_only else (
                 "EvoVerse Platform Development candidate mirror (UNQUALIFIED_NO_BOOT). "
                 "Reassemble shards and verify the signed descriptor; no board boot or NPU execution was tested.")
-        if manifest["kind"] == "evoverse-public-release-assets":
-            body = manifest["releaseBody"]
         data = json.dumps({"access_token": token,
-                           "tag_name": tag, "name": manifest.get("releaseName", tag),
+                           "tag_name": tag, "name": tag,
                            "body": body,
-                           "prerelease": manifest.get("prerelease", True),
+                           "prerelease": True,
                            "target_commitish": tc}).encode()
         st, _, body = api.request("POST", "%s/repos/%s/%s/releases" % (api.base, owner, repo),
                                   headers={"Content-Type": "application/json"}, data=data)
