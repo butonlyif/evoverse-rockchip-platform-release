@@ -313,7 +313,8 @@ def main():
                 "Reassemble shards and verify the signed descriptor; no board boot or NPU execution was tested.")
         if manifest["kind"] == "evoverse-public-release-assets":
             body = manifest["releaseBody"]
-        data = json.dumps({"tag_name": tag, "name": manifest.get("releaseName", tag),
+        data = json.dumps({"access_token": token,
+                           "tag_name": tag, "name": manifest.get("releaseName", tag),
                            "body": body,
                            "prerelease": manifest.get("prerelease", True),
                            "target_commitish": tc}).encode()
