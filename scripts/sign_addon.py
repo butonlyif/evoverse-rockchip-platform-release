@@ -24,7 +24,9 @@ VERSION = re.compile(r"[0-9]{4}\.[0-9]{1,2}\.[0-9]+\Z")
 
 
 def canonical(value):
-    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    # RFC 8785 / JCS: non-ASCII serializes as raw UTF-8, never \u escapes —
+    # this must match the SDK's canonicalBytes byte-for-byte.
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
 def check_descriptor(descriptor):

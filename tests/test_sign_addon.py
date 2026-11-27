@@ -116,7 +116,7 @@ def test_verify_assets_cross_bindings(tmp_path, monkeypatch):
     addon_assets(tmp_path)
     assert verify_addon_assets(tmp_path / "application-toolchain-addon-input.json", tmp_path) == 3
     # The descriptor pins the CANONICAL digest of the profiles manifest, not the file digest.
-    canonical = json.dumps(profiles_manifest(), sort_keys=True, separators=(",", ":")).encode()
+    canonical = json.dumps(profiles_manifest(), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     assert json.loads((tmp_path / "application-toolchain-addon-input.json").read_text())[
         "descriptor"]["profileManifestDigest"] == sha256(canonical)
     _rewrite_input(tmp_path, lambda d: d["descriptor"].update(profileManifestDigest=D("f")))
