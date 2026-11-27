@@ -43,30 +43,29 @@ jobs:
           python -m scripts.sign_addon sign assets/application-toolchain-addon-input.json \
             --output assets/application-toolchain-addon.json
           python -m scripts.sign_addon verify assets/application-toolchain-addon.json
-      - name: Prepare Gitee shards and verify local closure
+      - name: Prepare Gitee signed index and verify local closure
         run: |
-          python -m scripts.shard_addon_assets assets/application-toolchain-addon.json assets shards "$TAG"
+          python -m scripts.index_manifest assets/application-toolchain-addon.json "$TAG" shards/index-manifest.json --kind addon
           python scripts/publish_gitee_shards.py \
-            --shards-manifest shards/publish-manifest.json --assets-dir shards --tag "$TAG" \
+            --shards-manifest shards/index-manifest.json --assets-dir assets --tag "$TAG" \
             --target-commitish master
       - name: Add signed metadata to GitHub draft
         run: |
-          for file in assets/application-toolchain-addon.json shards/reassembly.json; do
-            name="$(basename "$file")"
-            expected="sha256:$(sha256sum "$file" | cut -d' ' -f1)"
-            actual="$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets \
-              --jq ".assets[] | select(.name == \"$name\") | .digest")"
-            if [ -z "$actual" ]; then
-              gh release upload "$TAG" "$file" -R "$GITHUB_REPOSITORY"
-            elif [ "$actual" != "$expected" ]; then
-              echo "Existing $name has different digest" >&2
-              exit 1
-            fi
-          done
-      - name: Publish and redownload Gitee shards
+          file="assets/application-toolchain-addon.json"
+          name="$(basename "$file")"
+          expected="sha256:$(sha256sum "$file" | cut -d' ' -f1)"
+          actual="$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets \
+            --jq ".assets[] | select(.name == \"$name\") | .digest")"
+          if [ -z "$actual" ]; then
+            gh release upload "$TAG" "$file" -R "$GITHUB_REPOSITORY"
+          elif [ "$actual" != "$expected" ]; then
+            echo "Existing $name has different digest" >&2
+            exit 1
+          fi
+      - name: Publish and redownload Gitee signed index
         run: |
           python scripts/publish_gitee_shards.py \
-            --shards-manifest shards/publish-manifest.json --assets-dir shards --tag "$TAG" \
+            --shards-manifest shards/index-manifest.json --assets-dir assets --tag "$TAG" \
             --target-commitish master --evidence gitee-publish-evidence.json --yes
       - name: Publish GitHub addon after both channels verify
         run: gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --draft=false --prerelease=true

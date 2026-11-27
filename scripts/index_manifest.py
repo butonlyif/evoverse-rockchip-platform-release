@@ -6,12 +6,16 @@ import hashlib
 import json
 from pathlib import Path
 
+from scripts.sign_addon import verify as verify_addon
 from scripts.sign_descriptor import verify
 
 
-def write_manifest(descriptor_path, tag, output_path, public_key):
+def write_manifest(descriptor_path, tag, output_path, public_key, *, kind="platform"):
     descriptor_path = Path(descriptor_path)
-    verify(descriptor_path, Path(public_key))
+    if kind == "addon":
+        verify_addon(descriptor_path, Path(public_key))
+    else:
+        verify(descriptor_path, Path(public_key))
     with descriptor_path.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
     asset = {"name": descriptor_path.name, "bytes": descriptor_path.stat().st_size, "sha256": digest}
@@ -31,8 +35,9 @@ def main():
     parser.add_argument("tag")
     parser.add_argument("output", type=Path)
     parser.add_argument("--public-key", type=Path, default=Path("trust/platform-release-2026-11.pub"))
+    parser.add_argument("--kind", choices=("platform", "addon"), default="platform")
     args = parser.parse_args()
-    print(write_manifest(args.descriptor, args.tag, args.output, args.public_key))
+    print(write_manifest(args.descriptor, args.tag, args.output, args.public_key, kind=args.kind))
 
 
 if __name__ == "__main__":
