@@ -15,7 +15,8 @@ def safe_name(value):
     return value
 
 
-def reassemble(manifest_path, shards_dir, output_dir, public_key):
+def reassemble(manifest_path, shards_dir, output_dir, public_key, *,
+               envelope_name="platform-development-release.json", verify_restored=None):
     manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
     if manifest.get("schemaVersion") != "1.0" or not isinstance(manifest.get("files"), list):
         raise ValueError("invalid reassembly manifest")
@@ -52,11 +53,14 @@ def reassemble(manifest_path, shards_dir, output_dir, public_key):
             temporary.replace(output_dir / name)
         finally:
             temporary.unlink(missing_ok=True)
-    if "platform-development-release.json" not in names:
-        raise ValueError("signed descriptor missing")
-    verified = verify_assets(output_dir / "platform-development-release.json", output_dir, public_key)
-    if verified != len(names) - 1:
-        raise ValueError("manifest file set differs from signed descriptor")
+    if envelope_name not in names:
+        raise ValueError("signed envelope missing")
+    if verify_restored is None:
+        verified = verify_assets(output_dir / envelope_name, output_dir, public_key)
+        if verified != len(names) - 1:
+            raise ValueError("manifest file set differs from signed descriptor")
+    else:
+        verify_restored(output_dir, public_key)
     return len(names)
 
 
@@ -66,8 +70,17 @@ def main():
     parser.add_argument("shards_dir", type=Path)
     parser.add_argument("output_dir", type=Path)
     parser.add_argument("--public-key", type=Path, default=Path("trust/platform-release-2026-11.pub"))
+    parser.add_argument("--kind", choices=("platform", "addon"), default="platform")
     args = parser.parse_args()
-    print(f"PASS {reassemble(args.manifest, args.shards_dir, args.output_dir, args.public_key)} restored files")
+    if args.kind == "addon":
+        from scripts.sign_addon import verify as verify_addon
+        count = reassemble(args.manifest, args.shards_dir, args.output_dir, args.public_key,
+                           envelope_name="application-toolchain-addon.json",
+                           verify_restored=lambda out, key: verify_addon(
+                               out / "application-toolchain-addon.json", key))
+    else:
+        count = reassemble(args.manifest, args.shards_dir, args.output_dir, args.public_key)
+    print(f"PASS {count} restored files")
 
 
 if __name__ == "__main__":
