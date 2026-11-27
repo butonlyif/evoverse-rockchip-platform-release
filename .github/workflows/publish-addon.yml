@@ -45,6 +45,7 @@ jobs:
           python -m scripts.sign_addon verify assets/application-toolchain-addon.json
       - name: Prepare Gitee signed index and verify local closure
         run: |
+          mkdir -p shards
           python -m scripts.index_manifest assets/application-toolchain-addon.json "$TAG" shards/index-manifest.json --kind addon
           python scripts/publish_gitee_shards.py \
             --shards-manifest shards/index-manifest.json --assets-dir assets --tag "$TAG" \
